@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; }
+  html, body, #root { height: 100%; }
+  body {
+    background: #FFFFFF;
+    color: #1A0F0A;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection { background: #5C3F28; color: #FAF6F1; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-[1400px] px-5 md:px-8 lg:px-12;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-mocha-600 px-6 py-3.5 text-sm font-medium text-cream transition-all duration-300 ease-out-soft hover:bg-mocha-700 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-mocha-200 bg-paper px-6 py-3.5 text-sm font-medium text-mocha-900 transition-all duration-300 ease-out-soft hover:border-mocha-600 hover:bg-cream active:scale-[0.98];
+  }
+  .btn-link {
+    @apply inline-flex items-center gap-1.5 text-sm font-medium text-mocha-900 underline-offset-4 hover:underline;
+  }
+  .input-field {
+    @apply w-full rounded-2xl border border-mocha-200 bg-paper px-4 py-3.5 text-[15px] text-ink placeholder:text-mocha-400 transition-colors focus:border-mocha-600 focus:outline-none focus:ring-0;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-mocha-200 bg-cream px-3 py-1.5 text-xs font-medium text-mocha-700;
+  }
+  .chip-pix {
+    @apply inline-flex items-center gap-1 rounded-full bg-pix-50 px-2.5 py-1 text-[11px] font-semibold text-pix-600;
+  }
+  .label-eyebrow {
+    @apply text-[11px] uppercase tracking-wider text-mocha-500 font-medium;
+  }
+  .h-display {
+    @apply font-display font-medium tracking-tighter leading-[0.95];
+  }
+}

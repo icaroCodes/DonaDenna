@@ -1,0 +1,28 @@
+# Dependências
+node_modules/
+**/node_modules/
+
+# Build
+dist/
+**/dist/
+*.log
+
+# Variáveis de ambiente — NUNCA commitar (contém SUPABASE_SERVICE_KEY)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Arquivos de rascunho com credenciais
+.env-backend
+.env-frontend
+
+# Sistema
+.DS_Store
+.claude/
+
+# IDE
+.vscode/
+.idea/
