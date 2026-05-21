@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Star, Heart, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
+import { Heart, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
 import type { Product } from '@/types/catalog'
 import { formatMoney } from '@/lib/format'
 import { primaryImage, totalStock, colorOptions, findVariant } from '@/lib/product'
@@ -11,7 +10,7 @@ import { useFavorites } from '@/contexts/FavoritesContext'
 import { useCart } from '@/contexts/CartContext'
 import { useToast } from '@/contexts/ToastContext'
 
-export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
+export function ProductCard({ product }: { product: Product; index?: number }) {
   const { isFavorite, toggle } = useFavorites()
   const { add } = useCart()
   const { showToast } = useToast()
@@ -162,11 +161,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
   const currentImg = allPhotos[activeImgIdx]
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.5, delay: Math.min(index * 0.03, 0.3), ease: [0.22, 1, 0.36, 1] }}
+    <div
       className="group flex flex-col h-full"
       onMouseLeave={() => setShowQuickAdd(false)}
     >
@@ -271,9 +266,9 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
                 <div
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                   className={`
-                    fixed inset-x-0 bottom-0 z-[70] bg-white rounded-t-3xl p-6 pb-8 shadow-[0_-20px_60px_rgba(0,0,0,0.15)] transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
+                    fixed inset-x-0 bottom-0 z-[70] bg-white rounded-t-3xl p-6 pb-8 transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
                     md:absolute md:rounded-t-none md:p-4 md:pb-4 md:shadow-[0_-12px_40px_rgba(0,0,0,0.06)] md:border-t md:border-black/5 md:z-30 md:bg-white/95 md:backdrop-blur-md
-                    ${showQuickAdd ? 'translate-y-0' : 'translate-y-full md:group-hover:translate-y-0'}
+                    ${showQuickAdd ? 'translate-y-0 shadow-[0_-20px_60px_rgba(0,0,0,0.15)]' : 'translate-y-full md:group-hover:translate-y-0'}
                   `}
                 >
                   {/* Mobile Drag Handle */}
@@ -340,8 +335,10 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           type="button"
           aria-label={fav ? 'Remover dos favoritos' : 'Favoritar'}
           aria-pressed={fav}
-          className={`absolute top-3 right-3 z-30 rounded-full backdrop-blur p-2.5 shadow-soft active:scale-90 hover:scale-105 transition-all touch-manipulation ${
-            fav ? 'bg-rose-500 text-paper' : 'bg-paper/95 text-mocha-700 hover:bg-paper'
+          className={`absolute top-3 right-3 z-30 rounded-full p-2 active:scale-90 transition-all touch-manipulation ${
+            fav
+              ? 'bg-mocha-900 text-cream shadow-soft'
+              : 'bg-paper/80 text-mocha-700 backdrop-blur hover:bg-paper hover:text-mocha-900 opacity-0 group-hover:opacity-100 md:opacity-100'
           }`}
           onClick={(e) => {
             e.preventDefault()
@@ -349,23 +346,24 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             toggle(product.id)
           }}
         >
-          <Heart size={15} className={fav ? 'fill-current' : ''} strokeWidth={fav ? 0 : 2} />
+          <Heart size={14} className={fav ? 'fill-current' : ''} strokeWidth={fav ? 0 : 1.75} />
         </button>
       </div>
 
-      <div className="mt-3.5 flex-1 flex flex-col">
+      <div className="mt-4 flex-1 flex flex-col">
         <Link to={`/produto/${product.id}`}>
-          <p className="text-[13px] font-medium uppercase tracking-wide text-mocha-900 truncate">{product.name}</p>
+          <p className="text-[13.5px] leading-snug font-medium text-mocha-900 line-clamp-2 min-h-[2.6em]">{product.name}</p>
         </Link>
-        
+
         {colors.length > 1 && (
           <div className="mt-2 flex flex-wrap gap-1.5 items-center">
-            {colors.map((c) => {
+            {colors.slice(0, 5).map((c) => {
               const v = findVariant(product, c.color, null)
               let img = primaryImage(product, v)
               if (!img && c.image_url) img = c.image_url
               const idx = img ? allPhotos.indexOf(img) : -1
               const isActive = idx !== -1 && idx === activeImgIdx
+              const isSelected = selectedColor === c.color || (isActive && !selectedColor)
 
               return (
                 <button
@@ -373,53 +371,56 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
                   onClick={(e) => handleColorClick(e, c.color)}
                   aria-label={c.color}
                   title={c.color}
-                  className={`relative h-4 w-4 rounded-full border transition-all ${
-                    (selectedColor === c.color || (isActive && !selectedColor)) ? 'border-mocha-900 scale-110 shadow-sm' : 'border-mocha-200 hover:border-mocha-400'
-                  }`}
-                  style={{ backgroundColor: c.color_hex || '#EEE' }}
+                  className="relative h-5 w-5 rounded-full flex items-center justify-center transition-transform hover:scale-110"
                 >
-                  {!c.color_hex && (
-                    <span className="absolute inset-0 flex items-center justify-center text-[8px] text-mocha-600">
-                      {c.color.slice(0, 1)}
-                    </span>
-                  )}
+                  <span
+                    className={`absolute inset-0 rounded-full ring-1 transition-all ${
+                      isSelected ? 'ring-mocha-900 ring-offset-2 ring-offset-paper' : 'ring-mocha-200'
+                    }`}
+                  />
+                  <span
+                    className="h-3.5 w-3.5 rounded-full"
+                    style={{ backgroundColor: c.color_hex || '#E7E3DD' }}
+                  >
+                    {!c.color_hex && (
+                      <span className="flex h-full w-full items-center justify-center text-[8px] text-mocha-600">
+                        {c.color.slice(0, 1)}
+                      </span>
+                    )}
+                  </span>
                 </button>
               )
             })}
+            {colors.length > 5 && (
+              <span className="text-[10px] text-mocha-400 ml-0.5">+{colors.length - 5}</span>
+            )}
           </div>
         )}
 
-        <div className="mt-auto pt-2">
-          <div className="flex items-center gap-0.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} size={11} className="fill-mocha-200 text-mocha-200" />
-            ))}
-            <span className="ml-1 text-[10px] text-mocha-400">(0)</span>
-          </div>
+        <div className="mt-auto pt-3">
           {soldout ? (
-            <p className="mt-1.5 text-[14px] font-medium text-mocha-400 italic">Esse acabou :(</p>
+            <p className="text-[13px] font-medium text-mocha-400 italic">Esse acabou :(</p>
           ) : (
             <>
               {headline.isActive && headline.originalPrice > headline.paymentMethodPrice && (
-                <p className="mt-1.5 text-[12px] text-mocha-400 line-through decoration-mocha-300">
+                <p className="text-[12px] text-mocha-400 line-through decoration-mocha-300/70">
                   {formatMoney(headline.originalPrice)}
                 </p>
               )}
-              <p className={`text-[15px] font-semibold tracking-tight ${promo.isActive ? 'text-red-600 mt-0' : 'text-mocha-900 mt-1.5'}`}>
+              <p className={`text-[17px] font-semibold tracking-tight tabular-nums ${promo.isActive ? 'text-red-600' : 'text-mocha-900'}`}>
                 {formatMoney(finalPrice)}
               </p>
               {headline.pixBoostPercent > 0 && (
-                <p className="mt-0.5 text-[11px] flex items-center gap-1">
-                  <span className="text-pix-600 font-semibold">{formatMoney(pixPrice)}</span>
-                  <span className="text-mocha-500">no PIX</span>
-                  <span className="chip-pix">{headline.pixBoostPercent}% off</span>
+                <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-[11.5px]">
+                  <span className="text-pix-600 font-semibold tabular-nums">{formatMoney(pixPrice)}</span>
+                  <span className="text-mocha-500">no PIX · {headline.pixBoostPercent}% off</span>
                 </p>
               )}
             </>
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 

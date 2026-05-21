@@ -69,9 +69,9 @@ function HeroBanner({ slides }: { slides: SiteHeroSlide[] }) {
   useEffect(() => { setIdx(0) }, [slides.length])
   useEffect(() => {
     if (slides.length <= 1 || paused) return
-    const t = setInterval(() => setIdx((i) => (i + 1) % slides.length), 6000)
-    return () => clearInterval(t)
-  }, [slides.length, paused])
+    const t = setTimeout(() => setIdx((i) => (i + 1) % slides.length), 10000)
+    return () => clearTimeout(t)
+  }, [slides.length, paused, idx])
 
   const next = () => setIdx((i) => (i + 1) % total)
   const prev = () => setIdx((i) => (i - 1 + total) % total)
