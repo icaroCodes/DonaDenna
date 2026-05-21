@@ -5,7 +5,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAuthModal } from '@/contexts/AuthModalContext'
 import {
-  createOrder, listAddresses, createAddress, quoteShipping,
+  createOrder, listAddresses, createAddress, quoteShipping, startMercadoPagoCheckout,
 } from '@/services/api'
 import type { ShippingOption, ShopperAddress } from '@/types/catalog'
 import { cleanCep, etaLabel, formatCep, formatMoney, lookupCep } from '@/lib/format'
@@ -127,7 +127,18 @@ export default function CheckoutPage() {
         },
       })
       clear()
-      nav(`/pedido/${order.id}`, { replace: true })
+
+      // Inicia checkout do Mercado Pago e redireciona o navegador.
+      // O MP volta pra /pedido/:id?payment=success|pending|failure via back_urls.
+      try {
+        const session = await startMercadoPagoCheckout(order.id)
+        window.location.href = session.init_point
+        return
+      } catch (mpErr) {
+        // Pedido foi criado mas o gateway falhou — leva pra confirmação com aviso.
+        console.error('Falha ao iniciar Mercado Pago:', mpErr)
+        nav(`/pedido/${order.id}?payment=error`, { replace: true })
+      }
     } catch (err) {
       setError((err as Error).message)
     } finally {

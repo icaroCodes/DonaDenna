@@ -13,6 +13,7 @@ const { createClient } = require('@supabase/supabase-js');
 const router = express.Router();
 
 const { createSaleEngine } = require('../lib/saleEngine');
+const mp = require('../lib/mercadoPago');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -128,6 +129,81 @@ router.get('/', async (req, res) => {
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
+});
+
+// ─── Iniciar pagamento (Mercado Pago Checkout Pro) ───────────────────────────
+// Cria uma preferência no MP a partir do pedido pendente e devolve a URL
+// init_point pra qual o frontend redireciona. Pedido deve estar 'pending' e
+// pertencer ao shopper logado.
+router.post('/:id/pay', async (req, res) => {
+  try {
+    const { data: sale, error } = await supabase
+      .from('sales')
+      .select('id, customer_id, total_amount, paid_amount, status, sale_items(*), sale_deliveries(*)')
+      .eq('id', req.params.id)
+      .eq('customer_id', req.customer.id)
+      .eq('channel', 'online')
+      .maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!sale) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    if (sale.status === 'paid') return res.status(400).json({ error: 'Pedido já está pago.' });
+
+    const items = (sale.sale_items || []).map((it) => ({
+      variant_id: it.variant_id,
+      product_name: it.product_name,
+      variant_label: it.variant_label,
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+    }));
+    const delivery = (sale.sale_deliveries || [])[0] || null;
+    const shipping = delivery && Number(delivery.amount) > 0
+      ? { amount: Number(delivery.amount), service: delivery.service }
+      : null;
+
+    const frontUrl = process.env.PUBLIC_FRONTEND_URL || process.env.FRONTEND_URL || '';
+    // FRONTEND_URL pode ter múltiplas origens separadas por vírgula — pega a primeira.
+    const frontBase = String(frontUrl).split(',')[0].trim().replace(/\/+$/, '');
+    const backBase = (process.env.PUBLIC_BACKEND_URL || '').replace(/\/+$/, '');
+
+    if (!frontBase) {
+      return res.status(500).json({ error: 'PUBLIC_FRONTEND_URL não configurado no backend.' });
+    }
+    if (!backBase) {
+      return res.status(500).json({ error: 'PUBLIC_BACKEND_URL não configurado no backend (necessário pro webhook).' });
+    }
+
+    const payer = {
+      name: req.customer.name || undefined,
+      email: req.customer.email || req.user?.email || undefined,
+      ...(req.customer.cpf
+        ? { identification: { type: 'CPF', number: String(req.customer.cpf).replace(/\D/g, '') } }
+        : {}),
+    };
+
+    const preference = await mp.createPreference({
+      sale,
+      items,
+      shipping,
+      payer,
+      backUrls: {
+        success: `${frontBase}/pedido/${sale.id}?payment=success`,
+        pending: `${frontBase}/pedido/${sale.id}?payment=pending`,
+        failure: `${frontBase}/pedido/${sale.id}?payment=failure`,
+      },
+      notificationUrl: `${backBase}/webhooks/mercadopago`,
+      externalReference: sale.id,
+    });
+
+    // OBS: não guardamos preference_id no banco (precisaria migration).
+    // O webhook usa `external_reference` (= sale.id) pra mapear de volta.
+    res.json({
+      preference_id: preference.id,
+      init_point: preference.init_point,
+      sandbox_init_point: preference.sandbox_init_point,
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message, details: err.details });
+  }
 });
 
 router.get('/:id', async (req, res) => {

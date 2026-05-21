@@ -156,3 +156,14 @@ export const listOrders = () =>
 
 export const getOrder = (id: string) =>
   request<Order>(`/orders/${id}`, {}, true)
+
+export interface MpCheckoutSession {
+  preference_id: string
+  init_point: string
+  sandbox_init_point?: string
+}
+
+/** Cria uma preferência no Mercado Pago Checkout Pro e devolve a URL
+ *  pra qual o navegador deve redirecionar pra o usuário pagar. */
+export const startMercadoPagoCheckout = (orderId: string) =>
+  request<MpCheckoutSession>(`/orders/${orderId}/pay`, { method: 'POST' }, true)
